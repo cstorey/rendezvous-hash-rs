@@ -73,4 +73,19 @@ mod tests {
 
         assert_eq!(buckets_a, buckets_b);
     }
+
+    #[test]
+    fn node_addition_should_preserve_most_keys() {
+        let before = ["fred", "barney", "wilma", "betty"];
+        let after = ["fred", "barney", "wilma", "betty", "bambam"];
+        let nkeys = 64usize;
+
+        let hrw_a = RendezvousHash::of(&before);
+        let hrw_b = RendezvousHash::of(&after);
+
+        let changed = (0..nkeys).filter(|k| hrw_a.bucket_for(k) != hrw_b.bucket_for(k)).count();
+        println!("changed items: {:?}/{:?}", changed, nkeys);
+        assert!(changed < nkeys / 4);
+    }
+
 }
