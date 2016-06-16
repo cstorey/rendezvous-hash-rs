@@ -2,15 +2,13 @@ use std::collections::HashSet;
 use std::iter;
 use std::hash::{Hash, SipHasher, Hasher, BuildHasher, BuildHasherDefault};
 
-pub struct RendezvousHash<N, H> {
+pub struct RendezvousHash<N, H = SipHasher> {
     store: HashSet<N>,
-    hash_builder: H,
+    hash_builder: BuildHasherDefault<H>,
 }
 
-impl<N: Eq + Hash> RendezvousHash<N, BuildHasherDefault<SipHasher>> {
-    pub fn of<I: iter::IntoIterator<Item = N>>
-        (src: I)
-         -> RendezvousHash<N, BuildHasherDefault<SipHasher>> {
+impl<N: Eq + Hash> RendezvousHash<N, SipHasher> {
+    pub fn of<I: iter::IntoIterator<Item = N>>(src: I) -> RendezvousHash<N, SipHasher> {
         let store = src.into_iter().collect();
         RendezvousHash {
             store: store,
@@ -19,7 +17,20 @@ impl<N: Eq + Hash> RendezvousHash<N, BuildHasherDefault<SipHasher>> {
     }
 }
 
-impl<N: Eq + Hash, H: BuildHasher> RendezvousHash<N, H> {
+
+impl<N: Eq + Hash, H: Hasher + Default> RendezvousHash<N, H> {
+    pub fn of_hasher<I: iter::IntoIterator<Item = N>>(builder: BuildHasherDefault<H>,
+                                                      src: I)
+                                                      -> RendezvousHash<N, H> {
+        let store = src.into_iter().collect();
+        RendezvousHash {
+            store: store,
+            hash_builder: builder,
+        }
+    }
+}
+
+impl<N: Eq + Hash, H: Hasher + Default> RendezvousHash<N, H> {
     pub fn bucket_for<K: Hash>(&self, key: K) -> Option<&N> {
         self.store.iter().max_by_key(|node| self.to_hash(node, &key))
     }
